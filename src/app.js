@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 
 const app = express();
 
+const authRoutes = require("./routes/auth.routes");
 // Parse incoming JSON request bodies
 app.use(express.json());
 
@@ -23,6 +24,8 @@ app.use(morgan("dev"));
 
 // Parse cookies attached to incoming requests
 app.use(cookieParser());
+
+app.use("/api/auth", authRoutes);
 
 // Root health-check endpoint
 app.get("/", (req, res) => {
