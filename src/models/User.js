@@ -30,6 +30,12 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
     },
+    
+    company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Company",
+    required: true,
+},
     role: {
       type: String,
       enum: ["admin", "manager", "sales"],
@@ -53,6 +59,8 @@ const userSchema = new mongoose.Schema(
         return ret;
       },
     },
+
+    
   }
 );
 
