@@ -8,6 +8,7 @@ const app = express();
 
 const authRoutes = require("./routes/auth.routes");
 const companyRoutes = require("./routes/company.routes");
+const customerRoutes = require("./routes/customer.routes");
 // Parse incoming JSON request bodies
 app.use(express.json());
 
@@ -28,6 +29,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/companies", companyRoutes);
+app.use("/api/customers", customerRoutes);
 
 // Root health-check endpoint
 app.get("/", (req, res) => {
