@@ -15,6 +15,7 @@ const pipelineRoutes = require("./routes/pipeline.routes");
 const pipelineStageRoutes = require("./routes/pipelineStage.routes");
 const dealRoutes = require("./routes/deal.routes");
 const taskRoutes = require("./routes/task.routes");
+const meetingRoutes = require("./routes/meeting.routes");
 // Parse incoming JSON request bodies
 app.use(express.json());
 
@@ -42,6 +43,7 @@ app.use("/api/pipelines", pipelineRoutes);
 app.use("/api/pipeline-stages", pipelineStageRoutes);
 app.use("/api/deals", dealRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/meetings", meetingRoutes);
 
 // Root health-check endpoint
 app.get("/", (req, res) => {
