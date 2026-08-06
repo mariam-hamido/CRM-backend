@@ -10,6 +10,7 @@ const authRoutes = require("./routes/auth.routes");
 const companyRoutes = require("./routes/company.routes");
 const customerRoutes = require("./routes/customer.routes");
 const customerContactRoutes = require("./routes/customerContact.routes");
+const leadRoutes = require("./routes/lead.routes");
 // Parse incoming JSON request bodies
 app.use(express.json());
 
@@ -32,6 +33,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/customer-contacts", customerContactRoutes);
+app.use("/api/leads", leadRoutes);
 
 // Root health-check endpoint
 app.get("/", (req, res) => {
