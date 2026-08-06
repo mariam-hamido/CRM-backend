@@ -17,6 +17,9 @@ const dealRoutes = require("./routes/deal.routes");
 const taskRoutes = require("./routes/task.routes");
 const meetingRoutes = require("./routes/meeting.routes");
 const noteRoutes = require("./routes/note.routes");
+const attachmentRoutes = require("./routes/attachment.routes");
+const activityRoutes = require("./routes/activity.routes");
+const notificationRoutes = require("./routes/notification.routes");
 // Parse incoming JSON request bodies
 app.use(express.json());
 
@@ -46,6 +49,9 @@ app.use("/api/deals", dealRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/meetings", meetingRoutes);
 app.use("/api/notes", noteRoutes);
+app.use("/api/attachments", attachmentRoutes);
+app.use("/api/activities", activityRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Root health-check endpoint
 app.get("/", (req, res) => {
