@@ -22,6 +22,7 @@ const activityRoutes = require("./routes/activity.routes");
 const notificationRoutes = require("./routes/notification.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const searchRoutes = require("./routes/search.routes");
+const reportRoutes = require("./routes/report.routes");
 // Parse incoming JSON request bodies
 app.use(express.json());
 
@@ -56,6 +57,7 @@ app.use("/api/activities", activityRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/reports", reportRoutes);
 
 // Root health-check endpoint
 app.get("/", (req, res) => {
