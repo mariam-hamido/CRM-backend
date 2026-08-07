@@ -23,6 +23,7 @@ const notificationRoutes = require("./routes/notification.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const searchRoutes = require("./routes/search.routes");
 const reportRoutes = require("./routes/report.routes");
+const { serve, setup } = require("./docs");
 // Parse incoming JSON request bodies
 app.use(express.json());
 
@@ -58,6 +59,14 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/reports", reportRoutes);
+
+// Interactive API documentation (OpenAPI 3.0 / Swagger UI)
+app.use("/api/docs", serve, setup);
+
+// Raw OpenAPI JSON spec
+app.get("/api/docs.json", (req, res) => {
+  res.status(200).json(require("./docs").swaggerSpec);
+});
 
 // Root health-check endpoint
 app.get("/", (req, res) => {
