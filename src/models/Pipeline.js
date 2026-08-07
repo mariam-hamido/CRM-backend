@@ -13,6 +13,7 @@ const pipelineSchema = new mongoose.Schema(
       required: [true, "Pipeline name is required"],
       trim: true,
       maxlength: 100,
+      index: true,
     },
     description: {
       type: String,
@@ -26,6 +27,7 @@ const pipelineSchema = new mongoose.Schema(
     isDefault: {
       type: Boolean,
       default: false,
+      index: true,
     },
     isActive: {
       type: Boolean,
@@ -46,9 +48,5 @@ const pipelineSchema = new mongoose.Schema(
     },
   }
 );
-
-pipelineSchema.index({ company: 1 });
-pipelineSchema.index({ name: 1 });
-pipelineSchema.index({ isDefault: 1 });
 
 module.exports = mongoose.model("Pipeline", pipelineSchema);

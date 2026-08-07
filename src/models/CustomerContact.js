@@ -44,6 +44,7 @@ const customerContactSchema = new mongoose.Schema(
     isPrimary: {
       type: Boolean,
       default: false,
+      index: true,
     },
     isDeleted: {
       type: Boolean,
@@ -65,10 +66,5 @@ const customerContactSchema = new mongoose.Schema(
 customerContactSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
-
-customerContactSchema.index({ company: 1 });
-customerContactSchema.index({ customer: 1 });
-customerContactSchema.index({ email: 1 });
-customerContactSchema.index({ isPrimary: 1 });
 
 module.exports = mongoose.model("CustomerContact", customerContactSchema);

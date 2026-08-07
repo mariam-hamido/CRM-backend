@@ -52,6 +52,7 @@ const dealSchema = new mongoose.Schema(
     },
     expectedCloseDate: {
       type: Date,
+      index: true,
     },
     actualCloseDate: {
       type: Date,
@@ -88,13 +89,5 @@ const dealSchema = new mongoose.Schema(
     },
   }
 );
-
-dealSchema.index({ company: 1 });
-dealSchema.index({ customer: 1 });
-dealSchema.index({ owner: 1 });
-dealSchema.index({ pipeline: 1 });
-dealSchema.index({ stage: 1 });
-dealSchema.index({ status: 1 });
-dealSchema.index({ expectedCloseDate: 1 });
 
 module.exports = mongoose.model("Deal", dealSchema);

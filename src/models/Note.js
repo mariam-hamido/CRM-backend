@@ -53,6 +53,7 @@ const noteSchema = new mongoose.Schema(
     isPinned: {
       type: Boolean,
       default: false,
+      index: true,
     },
     isDeleted: {
       type: Boolean,
@@ -81,14 +82,5 @@ noteSchema.pre("validate", function () {
     );
   }
 });
-
-noteSchema.index({ company: 1 });
-noteSchema.index({ createdBy: 1 });
-noteSchema.index({ customer: 1 });
-noteSchema.index({ lead: 1 });
-noteSchema.index({ deal: 1 });
-noteSchema.index({ task: 1 });
-noteSchema.index({ meeting: 1 });
-noteSchema.index({ isPinned: 1 });
 
 module.exports = mongoose.model("Note", noteSchema);

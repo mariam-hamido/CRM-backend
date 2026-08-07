@@ -61,6 +61,11 @@ const activitySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    createdAt: {
+      type: Date,
+      immutable: true,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -72,12 +77,5 @@ const activitySchema = new mongoose.Schema(
     },
   }
 );
-
-activitySchema.index({ company: 1 });
-activitySchema.index({ user: 1 });
-activitySchema.index({ entityType: 1 });
-activitySchema.index({ entityId: 1 });
-activitySchema.index({ action: 1 });
-activitySchema.index({ createdAt: 1 });
 
 module.exports = mongoose.model("Activity", activitySchema);

@@ -91,11 +91,4 @@ meetingSchema.virtual("isUpcoming").get(function () {
   return this.meetingDate > new Date();
 });
 
-meetingSchema.index({ company: 1 });
-meetingSchema.index({ customer: 1 });
-meetingSchema.index({ organizer: 1 });
-meetingSchema.index({ deal: 1 });
-meetingSchema.index({ meetingDate: 1 });
-meetingSchema.index({ status: 1 });
-
 module.exports = mongoose.model("Meeting", meetingSchema);

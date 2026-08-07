@@ -68,6 +68,7 @@ const attachmentSchema = new mongoose.Schema(
       type: String,
       enum: ["local", "cloudinary", "s3"],
       default: "local",
+      index: true,
     },
     mimeType: {
       type: String,
@@ -105,15 +106,5 @@ attachmentSchema.pre("validate", function () {
     );
   }
 });
-
-attachmentSchema.index({ company: 1 });
-attachmentSchema.index({ uploadedBy: 1 });
-attachmentSchema.index({ customer: 1 });
-attachmentSchema.index({ lead: 1 });
-attachmentSchema.index({ deal: 1 });
-attachmentSchema.index({ task: 1 });
-attachmentSchema.index({ meeting: 1 });
-attachmentSchema.index({ note: 1 });
-attachmentSchema.index({ storageProvider: 1 });
 
 module.exports = mongoose.model("Attachment", attachmentSchema);

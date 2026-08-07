@@ -58,6 +58,12 @@ const notificationSchema = new mongoose.Schema(
     expiresAt: {
       type: Date,
       default: null,
+      index: true,
+    },
+    createdAt: {
+      type: Date,
+      immutable: true,
+      index: true,
     },
   },
   {
@@ -75,12 +81,5 @@ const notificationSchema = new mongoose.Schema(
 notificationSchema.virtual("isExpired").get(function () {
   return Boolean(this.expiresAt) && this.expiresAt < new Date();
 });
-
-notificationSchema.index({ company: 1 });
-notificationSchema.index({ user: 1 });
-notificationSchema.index({ type: 1 });
-notificationSchema.index({ isRead: 1 });
-notificationSchema.index({ createdAt: 1 });
-notificationSchema.index({ expiresAt: 1 });
 
 module.exports = mongoose.model("Notification", notificationSchema);

@@ -6,16 +6,19 @@ const customerSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Company",
       required: [true, "Company is required"],
+      index: true,
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Owner is required"],
+      index: true,
     },
     companyName: {
       type: String,
       required: [true, "Company name is required"],
       trim: true,
+      index: true,
     },
     industry: {
       type: String,
@@ -27,6 +30,7 @@ const customerSchema = new mongoose.Schema(
       type: String,
       lowercase: true,
       trim: true,
+      index: true,
     },
     phone: {
       type: String,
@@ -67,10 +71,5 @@ const customerSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-customerSchema.index({ company: 1 });
-customerSchema.index({ owner: 1 });
-customerSchema.index({ companyName: 1 });
-customerSchema.index({ email: 1 });
 
 module.exports = mongoose.model("Customer", customerSchema);

@@ -58,6 +58,7 @@ const taskSchema = new mongoose.Schema(
     dueDate: {
       type: Date,
       required: [true, "Due date is required"],
+      index: true,
     },
     reminderDate: {
       type: Date,
@@ -87,14 +88,5 @@ const taskSchema = new mongoose.Schema(
 taskSchema.virtual("isOverdue").get(function () {
   return this.status !== "completed" && this.dueDate < new Date();
 });
-
-taskSchema.index({ company: 1 });
-taskSchema.index({ assignedTo: 1 });
-taskSchema.index({ createdBy: 1 });
-taskSchema.index({ customer: 1 });
-taskSchema.index({ deal: 1 });
-taskSchema.index({ status: 1 });
-taskSchema.index({ priority: 1 });
-taskSchema.index({ dueDate: 1 });
 
 module.exports = mongoose.model("Task", taskSchema);

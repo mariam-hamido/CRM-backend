@@ -57,6 +57,7 @@ const leadSchema = new mongoose.Schema(
       min: 0,
       max: 100,
       default: 0,
+      index: true,
     },
     estimatedValue: {
       type: Number,
@@ -96,11 +97,5 @@ const leadSchema = new mongoose.Schema(
 leadSchema.virtual("fullName").get(function () {
   return `${this.firstName} ${this.lastName}`;
 });
-
-leadSchema.index({ company: 1 });
-leadSchema.index({ owner: 1 });
-leadSchema.index({ email: 1 });
-leadSchema.index({ status: 1 });
-leadSchema.index({ score: 1 });
 
 module.exports = mongoose.model("Lead", leadSchema);

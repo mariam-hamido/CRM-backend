@@ -19,6 +19,7 @@ const pipelineStageSchema = new mongoose.Schema(
       required: [true, "Stage name is required"],
       trim: true,
       maxlength: 100,
+      index: true,
     },
     description: {
       type: String,
@@ -68,10 +69,5 @@ const pipelineStageSchema = new mongoose.Schema(
     },
   }
 );
-
-pipelineStageSchema.index({ company: 1 });
-pipelineStageSchema.index({ pipeline: 1 });
-pipelineStageSchema.index({ order: 1 });
-pipelineStageSchema.index({ name: 1 });
 
 module.exports = mongoose.model("PipelineStage", pipelineStageSchema);
