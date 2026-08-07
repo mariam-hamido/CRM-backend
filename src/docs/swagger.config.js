@@ -154,6 +154,7 @@ const swaggerDefinition = {
         properties: {
           _id: { type: "string", example: "60d21b4667d0d8992e610c86" },
           name: { type: "string", example: "Acme Inc." },
+          logo: { type: "string", example: "https://cdn.example.com/logos/acme.png" },
           industry: { type: "string", example: "Technology" },
           website: { type: "string", example: "https://acme.com" },
           phone: { type: "string", example: "+1-555-0100" },
@@ -166,7 +167,14 @@ const swaggerDefinition = {
             enum: ["free", "starter", "professional", "enterprise"],
             example: "professional",
           },
-          isActive: { type: "boolean", example: true },
+          status: {
+            type: "string",
+            enum: ["trial", "active", "suspended", "cancelled"],
+            example: "active",
+          },
+          timezone: { type: "string", example: "America/New_York" },
+          currency: { type: "string", example: "USD" },
+          createdBy: { type: "string", example: "60d21b4667d0d8992e610c85" },
           isDeleted: { type: "boolean", example: false },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
