@@ -2,16 +2,6 @@ const { body } = require("express-validator");
 const { handleValidationErrors } = require("./auth.validator");
 
 const validateCustomer = [
-  body("company")
-    .notEmpty()
-    .withMessage("Company is required")
-    .isMongoId()
-    .withMessage("Company must be a valid MongoDB ObjectId"),
-  body("owner")
-    .notEmpty()
-    .withMessage("Owner is required")
-    .isMongoId()
-    .withMessage("Owner must be a valid MongoDB ObjectId"),
   body("companyName")
     .trim()
     .notEmpty()

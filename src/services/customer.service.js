@@ -64,6 +64,14 @@ const assertUniqueContactDetails = async ({
 const createCustomer = async (customerData, user) => {
   const { company, owner, email, phone } = customerData;
 
+  if (!user.company) {
+    const error = new Error(
+      "Authenticated user has no company. Cannot create a customer."
+    );
+    error.status = 403;
+    throw error;
+  }
+
   if (company && !isSameId(company, user.company)) {
     throw new Error("Customer must belong to your company");
   }
