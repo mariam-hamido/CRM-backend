@@ -4,6 +4,7 @@ const User = require("../models/User");
 const Customer = require("../models/Customer");
 const Deal = require("../models/Deal");
 const Lead = require("../models/Lead");
+const notificationService = require("./notification.service");
 const { paginate, buildSearchFilter, buildSort } = require("../utils/query.helpers");
 
 const SORTABLE_FIELDS = [
@@ -97,6 +98,25 @@ const assertCanDelete = (task, user) => {
   }
 };
 
+const sendAssignmentNotification = async (task) => {
+  try {
+    await notificationService.createNotification({
+      company: task.company,
+      user: task.assignedTo,
+      title: "New task assigned",
+      message: `You have been assigned the task: ${task.title}`,
+      type: "task",
+      entityType: "task",
+      entityId: task._id,
+      actionUrl: `/tasks/${task._id}`,
+    });
+  } catch (error) {
+    console.error(
+      `Failed to create assignment notification for task ${task._id}: ${error.message}`
+    );
+  }
+};
+
 const createTask = async (taskData, user) => {
   const {
     title,
@@ -134,6 +154,10 @@ const createTask = async (taskData, user) => {
     createdBy: user._id,
     status: "pending",
   });
+
+  if (String(assignedTo) !== String(user._id)) {
+    sendAssignmentNotification(task);
+  }
 
   return task;
 };
@@ -238,6 +262,8 @@ const updateTask = async (taskId, updateData, user) => {
 
   assertCanUpdate(task, user);
 
+  const previousAssignedTo = String(task.assignedTo);
+
   const { company, createdBy, completedAt, lead, ...editableFields } = updateData;
 
   if (company || createdBy || completedAt) {
@@ -284,6 +310,14 @@ const updateTask = async (taskId, updateData, user) => {
 
   task.set(editableFields);
   await task.save();
+
+  if (
+    editableFields.assignedTo !== undefined &&
+    String(task.assignedTo) !== previousAssignedTo &&
+    String(task.assignedTo) !== String(user._id)
+  ) {
+    sendAssignmentNotification(task);
+  }
 
   return task;
 };
