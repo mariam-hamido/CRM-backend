@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Notification = require("../models/Notification");
+const { emitToUser } = require("../realtime/socket.server");
 const {
   paginate,
   buildSearchFilter,
@@ -109,6 +110,14 @@ const createNotification = async (data) => {
     actionUrl,
     expiresAt,
   });
+
+  try {
+    emitToUser(notification.user, "notification:new", notification.toJSON());
+  } catch (error) {
+    console.error(
+      `✗ Failed to deliver realtime notification ${notification._id}: ${error.message}`
+    );
+  }
 
   return notification;
 };
