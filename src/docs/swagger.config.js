@@ -28,6 +28,11 @@ const swaggerDefinition = {
       description:
         "Admin-approved employee emails allowed to register (company admins only)",
     },
+    {
+      name: "Company Employees",
+      description:
+        "Company employee listing and soft removal via deactivation (company admins only)",
+    },
     { name: "Customers", description: "Customer records" },
     { name: "Customer Contacts", description: "Contacts belonging to customers" },
     { name: "Leads", description: "Lead management and conversion" },
@@ -486,6 +491,34 @@ const swaggerDefinition = {
           removedAt: { type: "string", format: "date-time", nullable: true },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      CompanyEmployee: {
+        type: "object",
+        description:
+          "Safe employee representation - never includes password or auth internals",
+        properties: {
+          _id: { type: "string", example: "60d21b4667d0d8992e610c91" },
+          firstName: { type: "string", example: "John" },
+          lastName: { type: "string", example: "Doe" },
+          email: {
+            type: "string",
+            format: "email",
+            example: "john.doe@example.com",
+            description: "Stored normalized (trimmed, lowercased)",
+          },
+          role: {
+            type: "string",
+            enum: ["admin", "manager", "sales"],
+            example: "sales",
+            description: "Only manager/sales employees can be removed",
+          },
+          isActive: {
+            type: "boolean",
+            example: true,
+            description: "false means the employee was removed (deactivated)",
+          },
+          createdAt: { type: "string", format: "date-time" },
         },
       },
     },
