@@ -107,6 +107,89 @@
 
 /**
  * @openapi
+ * /api/auth/register/admin:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Register a new company admin together with a new company
+ *     description: >
+ *       First registration for company admins. Creates a brand-new company
+ *       from the provided name and an admin user for it. The company identity
+ *       is derived server-side via normalized comparison; an active company
+ *       with the same normalized name blocks registration (soft-deleted ones
+ *       do not). No invitation is required - the admin is the creator. The
+ *       role (admin) and active status are server-assigned; clients cannot
+ *       supply company ids or roles. Public endpoint.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [companyName, firstName, lastName, email, password]
+ *             properties:
+ *               companyName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 example: Acme Robotics
+ *                 description: Name of the NEW company to create (matched case/whitespace-insensitively against existing active companies)
+ *               firstName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 50
+ *                 example: Jane
+ *               lastName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 50
+ *                 example: Smith
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: jane.smith@example.com
+ *                 description: Globally unique; stored normalized (trim + lowercase)
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 8
+ *                 description: Must contain uppercase, lowercase, number and special character
+ *                 example: Passw0rd!
+ *     responses:
+ *       '201':
+ *         description: Company and admin user created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Admin registered successfully
+ *                 data:
+ *                   type: object
+ *                   description: Created admin user without the password hash
+ *       '400':
+ *         description: Validation failed, company name already exists, or email already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *       '500':
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+
+/**
+ * @openapi
  * /api/auth/login:
  *   post:
  *     tags: [Authentication]

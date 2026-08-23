@@ -47,6 +47,18 @@ const passwordRules = [
     .withMessage("Password must contain at least one special character"),
 ];
 
+// Shared company-by-name rule reused by employee and admin registration.
+const companyNameRules = [
+  body("companyName")
+    .trim()
+    .notEmpty()
+    .withMessage("Company name is required")
+    .isLength({ min: 2, max: 100 })
+    .withMessage("Company name must be between 2 and 100 characters")
+    .isString()
+    .withMessage("Company name must be a string"),
+];
+
 // LEGACY REGISTER - company stays a MongoDB ObjectId (unchanged contract).
 const validateRegister = [
   ...firstNameRules,
@@ -66,14 +78,16 @@ const validateEmployeeRegister = [
   ...lastNameRules,
   ...emailRules,
   ...passwordRules,
-  body("companyName")
-    .trim()
-    .notEmpty()
-    .withMessage("Company name is required")
-    .isLength({ min: 2, max: 100 })
-    .withMessage("Company name must be between 2 and 100 characters")
-    .isString()
-    .withMessage("Company name must be a string"),
+  ...companyNameRules,
+];
+
+// COMPANY ADMIN FIRST REGISTRATION - creates a brand-new company.
+const validateAdminRegister = [
+  ...firstNameRules,
+  ...lastNameRules,
+  ...emailRules,
+  ...passwordRules,
+  ...companyNameRules,
 ];
 
 const validateLogin = [
@@ -105,6 +119,7 @@ const handleValidationErrors = (req, res, next) => {
 module.exports = {
   validateRegister,
   validateEmployeeRegister,
+  validateAdminRegister,
   validateLogin,
   handleValidationErrors,
 };

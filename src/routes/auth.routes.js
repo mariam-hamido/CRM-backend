@@ -2,6 +2,7 @@ const express = require("express");
 const {
   register,
   registerEmployee,
+  registerAdmin,
   login,
   me,
 } = require("../controllers/auth.controller");
@@ -9,6 +10,7 @@ const authMiddleware = require("../middleware/auth.middleware");
 const {
   validateRegister,
   validateEmployeeRegister,
+  validateAdminRegister,
   validateLogin,
   handleValidationErrors,
 } = require("../validators/auth.validator");
@@ -28,6 +30,14 @@ router.post(
   validateEmployeeRegister,
   handleValidationErrors,
   registerEmployee
+);
+
+// Company admin first registration: creates a NEW company + its admin.
+router.post(
+  "/register/admin",
+  validateAdminRegister,
+  handleValidationErrors,
+  registerAdmin
 );
 
 router.post(

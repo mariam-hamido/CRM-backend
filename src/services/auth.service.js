@@ -14,6 +14,10 @@ const REGISTER_DEFAULT_ROLE = "sales";
 // company exists or whether a given email is invited anywhere.
 const INVALID_INVITATION_MESSAGE = "Invalid company name or unapproved email";
 
+// Same conflict wording as company.service so every flow reports duplicate
+// companies identically.
+const DUPLICATE_COMPANY_MESSAGE = "A company with this name already exists";
+
 const registerUser = async (userData) => {
   try {
     const { firstName, lastName, password, company, phone, avatar } = userData;
@@ -186,4 +190,108 @@ const registerEmployeeUser = async (userData) => {
   }
 };
 
-module.exports = { registerUser, registerEmployeeUser, loginUser };
+/**
+ * Company ADMIN first registration: creates a brand-new company and its
+ * admin user in one logical operation. No invitation is involved - the
+ * admin is the company creator. Everything security-sensitive is derived
+ * server-side: the company identity from its normalized name, role fixed
+ * to "admin", isActive from the model default. The client cannot supply
+ * company ids, roles, owner references or status flags.
+ *
+ * Failure safety without transactions (the project does not use them):
+ *   1. All validation happens BEFORE any document is written.
+ *   2. Company is created first (User.company is required, so user-first
+ *      ordering is impossible), then the admin user, then the ownership
+ *      link via the existing architecture field Company.createdBy.
+ *   3. Any failure compensates by deleting what was already created, so an
+ *      orphaned Company or User can never survive a failed registration.
+ *   4. Duplicate-key races fall back on the same partial unique indexes that
+ *      guard legacy flows: nameNormalized for companies, email for users.
+ */
+const registerAdminUser = async (userData) => {
+  const { companyName, firstName, lastName, password } = userData;
+  const email = normalizeEmail(userData.email);
+  const nameNormalized = normalizeCompanyName(companyName);
+
+  // 1. User.email is globally unique - checked FIRST so already-registered
+  //    accounts get the standard business error instead of a misleading
+  //    company conflict. Existing accounts are never promoted or moved.
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser) {
+    throw new Error("Email already exists");
+  }
+
+  // 2. Only ACTIVE companies reserve a normalized name; soft-deleted ones do
+  //    not (established uniqueness policy), so they never block creation.
+  const existingCompany = await Company.findOne({
+    nameNormalized,
+    isDeleted: false,
+  });
+
+  if (existingCompany) {
+    throw new Error(DUPLICATE_COMPANY_MESSAGE);
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // 3. Create the company. If a concurrent registration wins the unique
+  //    index between the pre-check and this write, report the conflict.
+  let company;
+
+  try {
+    company = await Company.create({ name: companyName });
+  } catch (error) {
+    if (error && error.code === 11000) {
+      throw new Error(DUPLICATE_COMPANY_MESSAGE);
+    }
+
+    throw error;
+  }
+
+  // 4. Create the admin under the new tenant; on ANY failure remove the
+  //    just-created company so no orphan survives.
+  let user;
+
+  try {
+    user = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      company: company._id,
+      role: "admin",
+    });
+  } catch (error) {
+    await Company.deleteOne({ _id: company._id });
+
+    if (error && error.code === 11000) {
+      throw new Error("Email already exists");
+    }
+
+    throw error;
+  }
+
+  // 5. Ownership link follows the existing architecture (Company.createdBy,
+  //    the same field company.service sets from the authenticated creator).
+  //    A failure here tears both documents back down.
+  try {
+    company.createdBy = user._id;
+    await company.save();
+  } catch (error) {
+    await User.deleteOne({ _id: user._id });
+    await Company.deleteOne({ _id: company._id });
+    throw error;
+  }
+
+  const { password: _password, ...userWithoutPassword } = user.toObject();
+
+  return userWithoutPassword;
+};
+
+module.exports = {
+  registerUser,
+  registerEmployeeUser,
+  registerAdminUser,
+  loginUser,
+};
