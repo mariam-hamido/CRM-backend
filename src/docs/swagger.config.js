@@ -23,6 +23,11 @@ const swaggerDefinition = {
   tags: [
     { name: "Authentication", description: "Register, login and current user" },
     { name: "Companies", description: "Tenant company management" },
+    {
+      name: "Company Invitations",
+      description:
+        "Admin-approved employee emails allowed to register (company admins only)",
+    },
     { name: "Customers", description: "Customer records" },
     { name: "Customer Contacts", description: "Contacts belonging to customers" },
     { name: "Leads", description: "Lead management and conversion" },
@@ -457,6 +462,30 @@ const swaggerDefinition = {
           totalPages: { type: "integer", example: 5 },
           page: { type: "integer", example: 1 },
           limit: { type: "integer", example: 10 },
+        },
+      },
+      CompanyInvitation: {
+        type: "object",
+        properties: {
+          _id: { type: "string", example: "60d21b4667d0d8992e610c90" },
+          company: { type: "string", example: "60d21b4667d0d8992e610c86" },
+          email: {
+            type: "string",
+            format: "email",
+            example: "new.hire@example.com",
+            description: "Stored normalized (trimmed, lowercased)",
+          },
+          invitedBy: { type: "string", example: "60d21b4667d0d8992e610c85" },
+          status: {
+            type: "string",
+            enum: ["pending", "accepted", "removed"],
+            example: "pending",
+          },
+          invitedAt: { type: "string", format: "date-time" },
+          acceptedAt: { type: "string", format: "date-time", nullable: true },
+          removedAt: { type: "string", format: "date-time", nullable: true },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
         },
       },
     },
