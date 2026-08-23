@@ -41,6 +41,10 @@ const authenticateSocket = async (socket) => {
     throw new Error("User not found");
   }
 
+  if (!user.isActive) {
+    throw new Error("User account is inactive");
+  }
+
   return user;
 };
 

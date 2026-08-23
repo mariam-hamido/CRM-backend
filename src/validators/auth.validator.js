@@ -18,7 +18,8 @@ const validateRegister = [
     .isString()
     .withMessage("Last name must be a string"),
   body("email")
-    .normalizeEmail()
+    .trim()
+    .toLowerCase()
     .isEmail()
     .withMessage("A valid email is required"),
   body("password")
@@ -42,7 +43,11 @@ const validateRegister = [
 ];
 
 const validateLogin = [
-  body("email").isEmail().withMessage("A valid email is required"),
+  body("email")
+    .trim()
+    .toLowerCase()
+    .isEmail()
+    .withMessage("A valid email is required"),
   body("password").notEmpty().withMessage("Password is required"),
 ];
 
