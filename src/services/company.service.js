@@ -1,4 +1,7 @@
 const Company = require("../models/Company");
+const { normalizeCompanyName } = require("../utils/companyName.util");
+
+const DUPLICATE_NAME_MESSAGE = "A company with this name already exists";
 
 const EDITABLE_FIELDS = [
   "name",
@@ -16,23 +19,45 @@ const EDITABLE_FIELDS = [
   "currency",
 ];
 
+// The partial unique index on nameNormalized is the race-safe enforcement
+// layer; surface its violation with the same friendly conflict error.
+const asDuplicateNameError = (error) => {
+  if (error && error.code === 11000) {
+    const conflict = new Error(DUPLICATE_NAME_MESSAGE);
+    conflict.status = 409;
+    return conflict;
+  }
+  return error;
+};
+
 const createCompany = async (companyData, userId) => {
   const { name } = companyData;
 
-  const existingCompany = await Company.findOne({ name });
+  const nameNormalized = normalizeCompanyName(name);
+
+  // Friendly pre-check; the unique index remains the real guarantee.
+  const existingCompany = await Company.findOne({
+    nameNormalized,
+    isDeleted: false,
+  });
 
   if (existingCompany) {
-    const error = new Error("A company with this name already exists");
+    const error = new Error(DUPLICATE_NAME_MESSAGE);
     error.status = 409;
     throw error;
   }
 
-  const company = await Company.create({
-    ...companyData,
-    createdBy: userId,
-  });
+  // Client-supplied identity values are never trusted.
+  const payload = { ...companyData, createdBy: userId };
+  delete payload.nameNormalized;
+  delete payload.isDeleted;
 
-  return company;
+  try {
+    const company = await Company.create(payload);
+    return company;
+  } catch (error) {
+    throw asDuplicateNameError(error);
+  }
 };
 
 const getCurrentCompany = async (companyId) => {
@@ -63,21 +88,29 @@ const updateCurrentCompany = async (companyId, companyData) => {
   const { name } = editableFields;
 
   if (name) {
+    // Only ACTIVE companies reserve a normalized name; soft-deleted ones do not.
     const existingCompany = await Company.findOne({
-      name,
+      nameNormalized: normalizeCompanyName(name),
       _id: { $ne: companyId },
       isDeleted: false,
     });
 
     if (existingCompany) {
-      const error = new Error("A company with this name already exists");
+      const error = new Error(DUPLICATE_NAME_MESSAGE);
       error.status = 409;
       throw error;
     }
   }
 
+  // The pre-validate hook recomputes nameNormalized from the display name
+  // on save; client-supplied values are never trusted.
   company.set(editableFields);
-  await company.save();
+
+  try {
+    await company.save();
+  } catch (error) {
+    throw asDuplicateNameError(error);
+  }
 
   return company;
 };
