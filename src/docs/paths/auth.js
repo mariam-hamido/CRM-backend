@@ -51,6 +51,62 @@
 
 /**
  * @openapi
+ * /api/auth/register/employee:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Register a new employee via admin invitation
+ *     description: >
+ *       First registration for invited employees. Requires the company NAME and
+ *       an email that a company admin has pre-approved with a pending invitation.
+ *       The company, role (sales) and active status are derived server-side;
+ *       clients cannot supply company ids or roles. Public endpoint.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [companyName, firstName, lastName, email, password]
+ *             properties:
+ *               companyName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 example: Acme Inc.
+ *                 description: Matched against the company's normalized identity (case/whitespace-insensitive)
+ *               firstName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 50
+ *                 example: John
+ *               lastName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 50
+ *                 example: Doe
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: john.doe@example.com
+ *                 description: Must match a pending invitation of the resolved company (normalized comparison)
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 8
+ *                 description: Must contain uppercase, lowercase, number and special character
+ *                 example: Passw0rd!
+ *     responses:
+ *       '201':
+ *         $ref: '#/components/responses/Created'
+ *       '400':
+ *         $ref: '#/components/responses/BadRequest'
+ *       '500':
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+
+/**
+ * @openapi
  * /api/auth/login:
  *   post:
  *     tags: [Authentication]

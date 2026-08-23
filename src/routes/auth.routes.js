@@ -1,8 +1,14 @@
 const express = require("express");
-const { register, login, me } = require("../controllers/auth.controller");
+const {
+  register,
+  registerEmployee,
+  login,
+  me,
+} = require("../controllers/auth.controller");
 const authMiddleware = require("../middleware/auth.middleware");
 const {
   validateRegister,
+  validateEmployeeRegister,
   validateLogin,
   handleValidationErrors,
 } = require("../validators/auth.validator");
@@ -14,6 +20,14 @@ router.post(
   validateRegister,
   handleValidationErrors,
   register
+);
+
+// Employee first registration: company NAME + admin-approved invitation.
+router.post(
+  "/register/employee",
+  validateEmployeeRegister,
+  handleValidationErrors,
+  registerEmployee
 );
 
 router.post(

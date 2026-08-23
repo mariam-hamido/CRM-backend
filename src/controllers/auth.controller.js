@@ -1,4 +1,4 @@
-const { registerUser, loginUser } = require("../services/auth.service");
+const { registerUser, registerEmployeeUser, loginUser } = require("../services/auth.service");
 
 const register = async (req, res) => {
   try {
@@ -7,6 +7,23 @@ const register = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "User registered successfully",
+      data: user,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const registerEmployee = async (req, res) => {
+  try {
+    const user = await registerEmployeeUser(req.body);
+
+    res.status(201).json({
+      success: true,
+      message: "Employee registered successfully",
       data: user,
     });
   } catch (error) {
@@ -41,4 +58,4 @@ const me = async (req, res) => {
   });
 };
 
-module.exports = { register, login, me };
+module.exports = { register, registerEmployee, login, me };
