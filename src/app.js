@@ -6,6 +6,8 @@ const cookieParser = require("cookie-parser");
 
 const app = express();
 
+const { getCorsOriginOption } = require("./config/cors");
+
 const authRoutes = require("./routes/auth.routes");
 const companyRoutes = require("./routes/company.routes");
 const companyInvitationRoutes = require("./routes/companyInvitation.routes");
@@ -32,8 +34,10 @@ app.use(express.json());
 // Parse URL-encoded request bodies (e.g. HTML form submissions)
 app.use(express.urlencoded({ extended: true }));
 
-// Enable Cross-Origin Resource Sharing for all origins
-app.use(cors());
+// Enable Cross-Origin Resource Sharing. In production the allowed origins are
+// restricted to FRONTEND_URL; in development (FRONTEND_URL unset) all origins
+// are allowed.
+app.use(cors({ origin: getCorsOriginOption() }));
 
 // Set secure HTTP response headers
 app.use(helmet());
@@ -72,6 +76,14 @@ app.get("/api/docs.json", (req, res) => {
   res.status(200).json(require("./docs").swaggerSpec);
 });
 
+// Deployment health-check endpoint (used by render.com and uptime probes).
+// The server only starts listening AFTER MongoDB connects, so a reachable
+// /health implies the process and database are up. Response stays minimal and
+// reveals no internals.
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // Root health-check endpoint
 app.get("/", (req, res) => {
   res.status(200).json({
@@ -82,10 +94,18 @@ app.get("/", (req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
+  const status = err.status || 500;
   console.error(`✗ ${err.stack || err.message}`);
-  res.status(err.status || 500).json({
+  res.status(status).json({
     success: false,
-    message: err.message || "Internal server error",
+    // Handled errors (which set err.status) carry safe, business-level messages.
+    // Unhandled 500s return a generic message so internal details (paths, DB
+    // connection strings, stack traces) are never exposed to clients; the full
+    // error is still logged server-side above.
+    message:
+      status < 500
+        ? err.message || "Request failed"
+        : "Internal server error",
   });
 });
 

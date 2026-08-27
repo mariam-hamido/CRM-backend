@@ -1,6 +1,7 @@
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { getSocketOriginOption } = require("../config/cors");
 
 const USER_ROOM_PREFIX = "user:";
 
@@ -51,7 +52,7 @@ const authenticateSocket = async (socket) => {
 const initSocketServer = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
-      origin: "*",
+      origin: getSocketOriginOption(),
       methods: ["GET", "POST"],
     },
   });
