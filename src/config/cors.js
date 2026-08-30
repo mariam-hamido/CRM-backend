@@ -5,23 +5,19 @@ const getFrontendOrigins = () => {
     return null;
   }
 
-  const origins = raw
+  return raw
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
-
-  return origins.length > 0 ? origins : null;
 };
 
 const getCorsOriginOption = () => {
   const origins = getFrontendOrigins();
 
-  // Development: allow all origins
-  if (!origins) {
+  if (!origins || origins.length === 0) {
     return true;
   }
 
-  // Production: allow only configured frontend origins
   return origins;
 };
 
