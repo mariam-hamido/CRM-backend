@@ -64,6 +64,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Configure Helmet safely
+// Configure Helmet safely
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
