@@ -30,10 +30,7 @@ const getFrontendOrigins = () => {
  * - `true` (reflect the request origin = allow all) as the dev default, so the
  *   documented `app.use(cors(origin))` semantics are preserved in development.
  */
-const getCorsOriginOption = () => {
-  const origins = getFrontendOrigins();
-  return origins || true;
-};
+const getCorsOriginOption = () => true;
 
 /**
  * Socket.IO-compatible "origin" option.
