@@ -6,8 +6,6 @@ const cookieParser = require("cookie-parser");
 
 const app = express();
 
-const { getCorsOriginOption } = require("./config/cors");
-
 const authRoutes = require("./routes/auth.routes");
 const companyRoutes = require("./routes/company.routes");
 const companyInvitationRoutes = require("./routes/companyInvitation.routes");
@@ -35,9 +33,21 @@ app.use(express.json());
 // Parse URL-encoded request bodies
 app.use(express.urlencoded({ extended: true }));
 
-// Enable CORS with full preflight handling
+// Enable CORS dynamically to allow Vercel origins automatically
 const corsOptions = {
-  origin: getCorsOriginOption(),
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.) or any vercel app / localhost
+    if (
+      !origin ||
+      origin.includes("vercel.app") ||
+      origin.includes("localhost") ||
+      origin === process.env.FRONTEND_URL
+    ) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
@@ -45,9 +55,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Handle preflight OPTIONS requests for all routes
-app.options(/(.*)/, cors(corsOptions));
 
 // Configure Helmet after CORS to prevent blocking cross-origin requests
 app.use(
