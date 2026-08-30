@@ -27,11 +27,13 @@ const searchRoutes = require("./routes/search.routes");
 const reportRoutes = require("./routes/report.routes");
 const { serve, setup } = require("./docs");
 
-// Explicit CORS Headers Middleware matching incoming Origin dynamically
+// 1. Universal Dynamic CORS Middleware (Must be first)
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
   }
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader(
@@ -40,43 +42,35 @@ app.use((req, res, next) => {
   );
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With, Accept"
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
   );
 
+  // Directly handle preflight OPTIONS requests
   if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
+    return res.status(200).end();
   }
   next();
 });
 
-// Fallback CORS library config
-app.use(
-  cors({
-    origin: (origin, callback) => callback(null, true),
-    credentials: true,
-  })
-);
-
-// Parse incoming JSON request bodies
+// 2. Parse incoming JSON & URL-encoded request bodies
 app.use(express.json());
-
-// Parse URL-encoded request bodies
 app.use(express.urlencoded({ extended: true }));
 
-// Configure Helmet safely
-// Configure Helmet safely
+// 3. Configure Helmet without blocking Cross-Origin requests
 app.use(
   helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
   })
 );
 
-// Log HTTP requests
+// 4. Log HTTP requests
 app.use(morgan("dev"));
 
-// Parse cookies
+// 5. Parse cookies
 app.use(cookieParser());
 
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/company-invitations", companyInvitationRoutes);
