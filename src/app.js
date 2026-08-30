@@ -27,36 +27,41 @@ const searchRoutes = require("./routes/search.routes");
 const reportRoutes = require("./routes/report.routes");
 const { serve, setup } = require("./docs");
 
+// Explicit CORS Headers Middleware to ensure preflight requests pass smoothly
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  res.setHeader("Access-Control-Allow-Origin", origin || "*");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With, Accept"
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+// Enable CORS library as fallback
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
+
 // Parse incoming JSON request bodies
 app.use(express.json());
 
 // Parse URL-encoded request bodies
 app.use(express.urlencoded({ extended: true }));
 
-// Enable CORS dynamically to allow Vercel origins automatically
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.) or any vercel app / localhost
-    if (
-      !origin ||
-      origin.includes("vercel.app") ||
-      origin.includes("localhost") ||
-      origin === process.env.FRONTEND_URL
-    ) {
-      callback(null, true);
-    } else {
-      callback(null, true);
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-  optionsSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
-
-// Configure Helmet after CORS to prevent blocking cross-origin requests
+// Configure Helmet safely
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
