@@ -37,6 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 // Enable Cross-Origin Resource Sharing. In production the allowed origins are
 // restricted to FRONTEND_URL; in development (FRONTEND_URL unset) all origins
 // are allowed.
+
 app.use(
   cors({
     origin: getCorsOriginOption(),
