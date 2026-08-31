@@ -14,16 +14,19 @@ const getFrontendOrigins = () => {
 const getCorsOriginOption = () => {
   const origins = getFrontendOrigins();
 
+  // Development: allow all origins
   if (!origins || origins.length === 0) {
     return true;
   }
 
+  // Production: allow only the configured frontend origins
   return origins;
 };
 
 const getSocketOriginOption = () => {
   const origins = getFrontendOrigins();
 
+  // Development: allow all origins
   return origins || "*";
 };
 

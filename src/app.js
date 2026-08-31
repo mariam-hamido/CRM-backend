@@ -1,5 +1,4 @@
 const express = require("express");
-const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
@@ -25,38 +24,54 @@ const notificationRoutes = require("./routes/notification.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const searchRoutes = require("./routes/search.routes");
 const reportRoutes = require("./routes/report.routes");
+
 const { serve, setup } = require("./docs");
 
-// 1. Universal Dynamic CORS Middleware (Must be first)
+// --------------------------------------------------
+// CORS
+// --------------------------------------------------
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   } else {
     res.setHeader("Access-Control-Allow-Origin", "*");
   }
+
   res.setHeader("Access-Control-Allow-Credentials", "true");
+
   res.setHeader(
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, PATCH, DELETE, OPTIONS"
   );
+
   res.setHeader(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept, Authorization"
   );
 
-  // Directly handle preflight OPTIONS requests
+  // Handle browser preflight requests
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
+
   next();
 });
 
-// 2. Parse incoming JSON & URL-encoded request bodies
+// --------------------------------------------------
+// Body Parsers
+// --------------------------------------------------
+
 app.use(express.json());
+
 app.use(express.urlencoded({ extended: true }));
 
-// 3. Configure Helmet without blocking Cross-Origin requests
+// --------------------------------------------------
+// Security
+// --------------------------------------------------
+
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
@@ -64,47 +79,84 @@ app.use(
   })
 );
 
-// 4. Log HTTP requests
+// --------------------------------------------------
+// Logging
+// --------------------------------------------------
+
 app.use(morgan("dev"));
 
-// 5. Parse cookies
+// --------------------------------------------------
+// Cookies
+// --------------------------------------------------
+
 app.use(cookieParser());
 
+// --------------------------------------------------
 // Routes
+// --------------------------------------------------
+
 app.use("/api/auth", authRoutes);
+
 app.use("/api/companies", companyRoutes);
+
 app.use("/api/company-invitations", companyInvitationRoutes);
+
 app.use("/api/company-employees", companyEmployeeRoutes);
+
 app.use("/api/customers", customerRoutes);
+
 app.use("/api/customer-contacts", customerContactRoutes);
+
 app.use("/api/leads", leadRoutes);
+
 app.use("/api/pipelines", pipelineRoutes);
+
 app.use("/api/pipeline-stages", pipelineStageRoutes);
+
 app.use("/api/deals", dealRoutes);
+
 app.use("/api/tasks", taskRoutes);
+
 app.use("/api/meetings", meetingRoutes);
+
 app.use("/api/notes", noteRoutes);
+
 app.use("/api/attachments", attachmentRoutes);
+
 app.use("/api/activities", activityRoutes);
+
 app.use("/api/notifications", notificationRoutes);
+
 app.use("/api/dashboard", dashboardRoutes);
+
 app.use("/api/search", searchRoutes);
+
 app.use("/api/reports", reportRoutes);
 
-// Interactive API documentation
+// --------------------------------------------------
+// API Documentation
+// --------------------------------------------------
+
 app.use("/api/docs", serve, setup);
 
-// Raw OpenAPI JSON spec
 app.get("/api/docs.json", (req, res) => {
   res.status(200).json(require("./docs").swaggerSpec);
 });
 
-// Deployment health-check endpoint
+// --------------------------------------------------
+// Health Check
+// --------------------------------------------------
+
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
+  res.status(200).json({
+    status: "ok",
+  });
 });
 
-// Root health-check endpoint
+// --------------------------------------------------
+// Root Endpoint
+// --------------------------------------------------
+
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -112,10 +164,15 @@ app.get("/", (req, res) => {
   });
 });
 
-// Global error handler
+// --------------------------------------------------
+// Global Error Handler
+// --------------------------------------------------
+
 app.use((err, req, res, next) => {
   const status = err.status || 500;
+
   console.error(`✗ ${err.stack || err.message}`);
+
   res.status(status).json({
     success: false,
     message:
