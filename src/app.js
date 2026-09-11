@@ -3,6 +3,8 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 
+const { UPLOAD_DIR } = require("./utils/file.util");
+
 const app = express();
 
 const authRoutes = require("./routes/auth.routes");
@@ -90,6 +92,12 @@ app.use(morgan("dev"));
 // --------------------------------------------------
 
 app.use(cookieParser());
+
+// --------------------------------------------------
+// Static Files (Uploads)
+// --------------------------------------------------
+
+app.use("/uploads", express.static(UPLOAD_DIR));
 
 // --------------------------------------------------
 // Routes

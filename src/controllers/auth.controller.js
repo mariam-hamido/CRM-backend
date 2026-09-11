@@ -3,6 +3,7 @@ const {
   registerEmployeeUser,
   registerAdminUser,
   loginUser,
+  updateProfileUser,
 } = require("../services/auth.service");
 
 const register = async (req, res) => {
@@ -63,6 +64,20 @@ const me = async (req, res) => {
   });
 };
 
+const updateProfile = async (req, res, next) => {
+  try {
+    const user = await updateProfileUser(req.user._id, req.body, req.file);
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const registerAdmin = async (req, res) => {
   try {
     const user = await registerAdminUser(req.body);
@@ -80,4 +95,11 @@ const registerAdmin = async (req, res) => {
   }
 };
 
-module.exports = { register, registerEmployee, registerAdmin, login, me };
+module.exports = {
+  register,
+  registerEmployee,
+  registerAdmin,
+  login,
+  me,
+  updateProfile,
+};

@@ -1,10 +1,17 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const path = require("path");
+const fsPromises = require("fs").promises;
 const User = require("../models/User");
 const Company = require("../models/Company");
 const CompanyInvitation = require("../models/CompanyInvitation");
 const { normalizeEmail } = require("../utils/email.util");
 const { normalizeCompanyName } = require("../utils/companyName.util");
+const {
+  UPLOAD_DIR,
+  AVATAR_FOLDER,
+  deleteFileFromDisk,
+} = require("../utils/file.util");
 
 // Shared canonical normalizations live in src/utils/*.util.js so every flow
 // (register, login, invitations) compares identities identically.
@@ -289,9 +296,95 @@ const registerAdminUser = async (userData) => {
   return userWithoutPassword;
 };
 
+const getAvatarFilePath = (user) => {
+  if (!user.avatar || !user.avatar.startsWith(`/uploads/${AVATAR_FOLDER}/`)) {
+    return null;
+  }
+
+  return path.join(UPLOAD_DIR, AVATAR_FOLDER, path.basename(user.avatar));
+};
+
+const persistAvatarFile = async (file) => {
+  const finalDir = path.join(UPLOAD_DIR, AVATAR_FOLDER);
+
+  await fsPromises.mkdir(finalDir, { recursive: true });
+  await fsPromises.rename(file.path, path.join(finalDir, file.filename));
+
+  return `/uploads/${AVATAR_FOLDER}/${file.filename}`;
+};
+
+/**
+ * Updates only user-owned personal fields (firstName, lastName, phone, avatar).
+ * Everything system-managed (email, role, company, isActive, lastLogin,
+ * timestamps) is never read from the payload - it is enforced by this whitelist
+ * on top of the validator, so even a crafted request cannot alter it.
+ */
+const updateProfileUser = async (userId, body, file) => {
+  const update = {};
+  let newAvatarPath = null;
+
+  for (const field of ["firstName", "lastName", "phone"]) {
+    if (body[field] !== undefined) {
+      update[field] = body[field];
+    }
+  }
+
+  try {
+    const current = await User.findById(userId);
+
+    if (!current) {
+      const error = new Error("User not found");
+      error.status = 404;
+      throw error;
+    }
+
+    if (file) {
+      update.avatar = await persistAvatarFile(file);
+      newAvatarPath = getAvatarFilePath({ avatar: update.avatar });
+    } else if (body.removeAvatar === true) {
+      // Client explicitly asked to clear the existing avatar.
+      update.avatar = null;
+    }
+
+    if (Object.keys(update).length === 0) {
+      const { password: _password, ...userWithoutPassword } =
+        current.toObject();
+      return userWithoutPassword;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: update },
+      { new: true, runValidators: true }
+    );
+
+    // Once committed, remove the previous local avatar file (if any) so an
+    // old photo is never left orphaned on disk.
+    const oldAvatarPath = getAvatarFilePath(current);
+
+    if (oldAvatarPath && (file || update.avatar === null)) {
+      await deleteFileFromDisk(oldAvatarPath);
+    }
+
+    const { password: _password, ...userWithoutPassword } = user.toObject();
+
+    return userWithoutPassword;
+  } catch (error) {
+    // Remove whatever file was saved (tmp or final avatars dir) so a failed
+    // update never leaks files on disk.
+    await deleteFileFromDisk(newAvatarPath);
+    if (file) {
+      await deleteFileFromDisk(file.path);
+    }
+
+    throw error;
+  }
+};
+
 module.exports = {
   registerUser,
   registerEmployeeUser,
   registerAdminUser,
   loginUser,
+  updateProfileUser,
 };

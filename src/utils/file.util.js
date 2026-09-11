@@ -29,6 +29,8 @@ const EXTENSION_MIME_MAP = {
 
 const ALLOWED_EXTENSIONS = Object.keys(EXTENSION_MIME_MAP);
 
+const AVATAR_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+
 const ENTITY_FIELDS = ["customer", "lead", "deal", "task", "meeting", "note"];
 
 const ENTITY_FOLDERS = {
@@ -40,8 +42,15 @@ const ENTITY_FOLDERS = {
   note: "notes",
 };
 
+const AVATAR_FOLDER = "avatars";
+
 const ensureUploadDirs = () => {
-  const dirs = [UPLOAD_DIR, TMP_DIR, ...Object.values(ENTITY_FOLDERS)];
+  const dirs = [
+    UPLOAD_DIR,
+    TMP_DIR,
+    AVATAR_FOLDER,
+    ...Object.values(ENTITY_FOLDERS),
+  ];
 
   for (const dir of dirs) {
     fs.mkdirSync(dir, { recursive: true });
@@ -59,6 +68,22 @@ const isAllowedFile = (file) => {
 
   if (!isAllowedExtension(ext)) {
     return { allowed: false, error: "Unsupported file type" };
+  }
+
+  if (file.mimetype !== getExpectedMimeType(ext)) {
+    return { allowed: false, error: "File type does not match its extension" };
+  }
+
+  return { allowed: true, error: null };
+};
+
+// Avatar uploads are restricted to raster images only (no SVG, since it can
+// carry embedded scripts, and no documents).
+const isAllowedAvatar = (file) => {
+  const ext = getExtension(file.originalname);
+
+  if (!AVATAR_EXTENSIONS.includes(ext)) {
+    return { allowed: false, error: "Only JPG, PNG, or WebP images are allowed" };
   }
 
   if (file.mimetype !== getExpectedMimeType(ext)) {
@@ -115,6 +140,8 @@ module.exports = {
   TMP_DIR,
   ENTITY_FIELDS,
   ENTITY_FOLDERS,
+  AVATAR_FOLDER,
+  AVATAR_EXTENSIONS,
   ALLOWED_EXTENSIONS,
   EXTENSION_MIME_MAP,
   ensureUploadDirs,
@@ -122,6 +149,7 @@ module.exports = {
   isAllowedExtension,
   getExpectedMimeType,
   isAllowedFile,
+  isAllowedAvatar,
   generateSecureFileName,
   getEntityFolder,
   getAttachmentFolder,

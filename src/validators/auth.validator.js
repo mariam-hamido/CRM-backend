@@ -1,4 +1,5 @@
 const { body, validationResult } = require("express-validator");
+const { deleteFileFromDisk } = require("../utils/file.util");
 
 // Shared identity rules reused by legacy register and employee register.
 const firstNameRules = [
@@ -99,10 +100,52 @@ const validateLogin = [
   body("password").notEmpty().withMessage("Password is required"),
 ];
 
-const handleValidationErrors = (req, res, next) => {
+// Profile updates are restricted to personal, user-owned fields. email, role,
+// company, isActive and timestamps are system-managed and silently ignored by
+// the service (the service applies a whitelist regardless of what is sent).
+const validateUpdateProfile = [
+  body("firstName")
+    .optional()
+    .trim()
+    .isString()
+    .withMessage("First name must be a string")
+    .isLength({ min: 2, max: 50 })
+    .withMessage("First name must be between 2 and 50 characters"),
+  body("lastName")
+    .optional()
+    .trim()
+    .isString()
+    .withMessage("Last name must be a string")
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Last name must be between 2 and 50 characters"),
+  body("phone")
+    .optional({ values: "falsy" })
+    .trim()
+    .isString()
+    .withMessage("Phone must be a string")
+    .isLength({ max: 30 })
+    .withMessage("Phone must not exceed 30 characters"),
+  body("removeAvatar")
+    .optional()
+    .isBoolean()
+    .withMessage("removeAvatar must be a boolean"),
+];
+
+const handleValidationErrors = async (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
+    // If an avatar was uploaded before validation failed, remove the temp file
+    // so failed requests never leak files into the uploads/tmp directory. Best
+    // effort - a cleanup failure must never mask the validation response.
+    if (req.file && req.file.path) {
+      try {
+        await deleteFileFromDisk(req.file.path);
+      } catch (error) {
+        console.warn(`Failed to clean up uploaded file: ${error.message}`);
+      }
+    }
+
     return res.status(400).json({
       success: false,
       message: "Validation failed",
@@ -121,5 +164,6 @@ module.exports = {
   validateEmployeeRegister,
   validateAdminRegister,
   validateLogin,
+  validateUpdateProfile,
   handleValidationErrors,
 };

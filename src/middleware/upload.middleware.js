@@ -4,6 +4,7 @@ const multer = require("multer");
 const {
   TMP_DIR,
   isAllowedFile,
+  isAllowedAvatar,
   generateSecureFileName,
   ensureUploadDirs,
 } = require("../utils/file.util");
@@ -39,12 +40,33 @@ const upload = multer({
   },
 });
 
+// Restricted image-only uploader used for avatar/profile pictures. Shares the
+// same tmp/storage pipeline as generic attachments; a separate filter + limit.
+const avatarFileFilter = (_req, file, cb) => {
+  const { allowed, error } = isAllowedAvatar(file);
+
+  if (!allowed) {
+    cb(new Error(error));
+    return;
+  }
+
+  cb(null, true);
+};
+
+const uploadAvatar = multer({
+  storage,
+  fileFilter: avatarFileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+});
+
 const handleUploadErrors = (error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({
         success: false,
-        message: "File is too large. Maximum size is 20 MB",
+        message: "File is too large. Please upload a smaller file",
       });
     }
 
@@ -64,4 +86,4 @@ const handleUploadErrors = (error, req, res, next) => {
   next(error);
 };
 
-module.exports = { upload, handleUploadErrors };
+module.exports = { upload, uploadAvatar, handleUploadErrors };

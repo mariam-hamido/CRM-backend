@@ -256,4 +256,55 @@
  *         $ref: '#/components/responses/Unauthorized'
  *       '500':
  *         $ref: '#/components/responses/InternalServerError'
+ *   patch:
+ *     tags: [Authentication]
+ *     summary: Update current user
+ *     description: >-
+ *       Updates the authenticated user's personal information (firstName,
+ *       lastName, phone) and optionally replaces their avatar with an uploaded
+ *       image file (multipart field "avatar", max 5 MB, JPG/PNG/WebP).
+ *       System-managed fields (email, role, company, isActive, timestamps)
+ *       can never be changed through this endpoint.
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 50
+ *                 example: Jane
+ *               lastName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 50
+ *                 example: Smith
+ *               phone:
+ *                 type: string
+ *                 maxLength: 30
+ *                 example: "+1 555 0100"
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       '200':
+ *         $ref: '#/components/responses/Success'
+ *       '400':
+ *         $ref: '#/components/responses/BadRequest'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ *       '500':
+ *         $ref: '#/components/responses/InternalServerError'
  */

@@ -5,13 +5,19 @@ const {
   registerAdmin,
   login,
   me,
+  updateProfile,
 } = require("../controllers/auth.controller");
 const authMiddleware = require("../middleware/auth.middleware");
+const {
+  uploadAvatar,
+  handleUploadErrors,
+} = require("../middleware/upload.middleware");
 const {
   validateRegister,
   validateEmployeeRegister,
   validateAdminRegister,
   validateLogin,
+  validateUpdateProfile,
   handleValidationErrors,
 } = require("../validators/auth.validator");
 
@@ -48,5 +54,17 @@ router.post(
 );
 
 router.get("/me", authMiddleware, me);
+
+// PATCH /me accepts either a JSON body (firstName/lastName/phone) or a
+// multipart form carrying an optional "avatar" image file.
+router.patch(
+  "/me",
+  authMiddleware,
+  uploadAvatar.single("avatar"),
+  handleUploadErrors,
+  validateUpdateProfile,
+  handleValidationErrors,
+  updateProfile
+);
 
 module.exports = router;
