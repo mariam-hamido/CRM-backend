@@ -1,10 +1,10 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const path = require("path");
-const fsPromises = require("fs").promises;
 const User = require("../models/User");
 const Company = require("../models/Company");
 const CompanyInvitation = require("../models/CompanyInvitation");
+const { configureCloudinary } = require("../config/cloudinary");
 const { normalizeEmail } = require("../utils/email.util");
 const { normalizeCompanyName } = require("../utils/companyName.util");
 const {
@@ -296,21 +296,88 @@ const registerAdminUser = async (userData) => {
   return userWithoutPassword;
 };
 
-const getAvatarFilePath = (user) => {
-  if (!user.avatar || !user.avatar.startsWith(`/uploads/${AVATAR_FOLDER}/`)) {
+// Avatars are stored in Cloudinary. The public_id is deliberately derived from
+// the user id rather than being parsed back out of the stored URL: uploading
+// with the same public_id overwrites the previous asset, so a replacement never
+// orphans the old image and the returned URL always carries a fresh version,
+// which busts the browser cache. Nothing is ever written to the local disk
+// because Render's filesystem is ephemeral.
+const getAvatarPublicId = (userId) => `${AVATAR_FOLDER}/${String(userId)}`;
+
+// Avatars uploaded before the Cloudinary migration are relative local paths
+// (/uploads/avatars/<name>) still served by express.static. Kept so a user who
+// has not re-uploaded yet can still have their old file cleaned up.
+const isLegacyAvatarPath = (avatar) =>
+  Boolean(avatar) && avatar.startsWith(`/uploads/${AVATAR_FOLDER}/`);
+
+const getLegacyAvatarFilePath = (avatar) => {
+  if (!isLegacyAvatarPath(avatar)) {
     return null;
   }
 
-  return path.join(UPLOAD_DIR, AVATAR_FOLDER, path.basename(user.avatar));
+  return path.join(UPLOAD_DIR, AVATAR_FOLDER, path.basename(avatar));
 };
 
-const persistAvatarFile = async (file) => {
-  const finalDir = path.join(UPLOAD_DIR, AVATAR_FOLDER);
+const isRemoteAvatarUrl = (avatar) => Boolean(avatar) && /^https?:\/\//i.test(avatar);
 
-  await fsPromises.mkdir(finalDir, { recursive: true });
-  await fsPromises.rename(file.path, path.join(finalDir, file.filename));
+// Cleanup helpers run after the profile update has already been committed, so
+// a failure must never mask the real outcome nor fail a successful save.
+const discardTempFile = async (filePath) => {
+  if (!filePath) {
+    return;
+  }
 
-  return `/uploads/${AVATAR_FOLDER}/${file.filename}`;
+  try {
+    await deleteFileFromDisk(filePath);
+  } catch (error) {
+    console.warn(`Failed to clean up temporary avatar file: ${error.message}`);
+  }
+};
+
+const deleteLegacyAvatarFile = async (avatar) => {
+  try {
+    await deleteFileFromDisk(getLegacyAvatarFilePath(avatar));
+  } catch (error) {
+    console.warn(`Failed to delete previous avatar file: ${error.message}`);
+  }
+};
+
+const destroyCloudinaryAvatar = async (userId) => {
+  try {
+    const cloudinary = configureCloudinary();
+
+    await cloudinary.uploader.destroy(getAvatarPublicId(userId), {
+      resource_type: "image",
+    });
+  } catch (error) {
+    console.warn(`Failed to delete previous avatar from Cloudinary: ${error.message}`);
+  }
+};
+
+const persistAvatarFile = async (file, userId) => {
+  const cloudinary = configureCloudinary();
+
+  try {
+    const result = await cloudinary.uploader.upload(file.path, {
+      folder: AVATAR_FOLDER,
+      public_id: String(userId),
+      overwrite: true,
+      resource_type: "image",
+    });
+
+    if (!result.secure_url) {
+      throw new Error("Cloudinary did not return a secure_url for the avatar");
+    }
+
+    // The image now lives in Cloudinary, so the multer temp copy is dead weight.
+    await discardTempFile(file.path);
+
+    return result.secure_url;
+  } catch (error) {
+    // Never persist a broken/partial avatar URL, and never leak the temp file.
+    await discardTempFile(file.path);
+    throw error;
+  }
 };
 
 /**
@@ -321,7 +388,6 @@ const persistAvatarFile = async (file) => {
  */
 const updateProfileUser = async (userId, body, file) => {
   const update = {};
-  let newAvatarPath = null;
 
   for (const field of ["firstName", "lastName", "phone"]) {
     if (body[field] !== undefined) {
@@ -339,8 +405,7 @@ const updateProfileUser = async (userId, body, file) => {
     }
 
     if (file) {
-      update.avatar = await persistAvatarFile(file);
-      newAvatarPath = getAvatarFilePath({ avatar: update.avatar });
+      update.avatar = await persistAvatarFile(file, userId);
     } else if (body.removeAvatar === true) {
       // Client explicitly asked to clear the existing avatar.
       update.avatar = null;
@@ -358,24 +423,29 @@ const updateProfileUser = async (userId, body, file) => {
       { new: true, runValidators: true }
     );
 
-    // Once committed, remove the previous local avatar file (if any) so an
-    // old photo is never left orphaned on disk.
-    const oldAvatarPath = getAvatarFilePath(current);
-
-    if (oldAvatarPath && (file || update.avatar === null)) {
-      await deleteFileFromDisk(oldAvatarPath);
+    // Once committed, tidy the previous avatar. The two cases differ because
+    // the new upload reuses the user's public_id:
+    //  - Replace: the old Cloudinary asset was overwritten in place, so it must
+    //    NOT be destroyed (that would delete the image just saved). Only a
+    //    legacy on-disk file is still left behind.
+    //  - Remove: nothing was uploaded, so the previous asset is deleted here.
+    if (current.avatar && update.avatar === null) {
+      if (isLegacyAvatarPath(current.avatar)) {
+        await deleteLegacyAvatarFile(current.avatar);
+      } else if (isRemoteAvatarUrl(current.avatar)) {
+        await destroyCloudinaryAvatar(userId);
+      }
+    } else if (current.avatar && file) {
+      await deleteLegacyAvatarFile(current.avatar);
     }
 
     const { password: _password, ...userWithoutPassword } = user.toObject();
 
     return userWithoutPassword;
   } catch (error) {
-    // Remove whatever file was saved (tmp or final avatars dir) so a failed
-    // update never leaks files on disk.
-    await deleteFileFromDisk(newAvatarPath);
-    if (file) {
-      await deleteFileFromDisk(file.path);
-    }
+    // The avatar is never written to disk, so the only artifact a failed
+    // request can leave behind is the multer temp file.
+    await discardTempFile(file && file.path);
 
     throw error;
   }
